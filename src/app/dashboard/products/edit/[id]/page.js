@@ -1,28 +1,69 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Upload, Save, X } from "lucide-react";
+import { ArrowLeft, Upload, Save, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import api from "@/lib/api";
+import RoleGuard from "@/components/RoleGuard";
 
 export default function EditProductPage() {
   const params = useParams();
-  // Using params.id to mock fetching data
-  const productId = params?.id || "1";
+  const productId = params?.id;
 
-  const [imagePreview, setImagePreview] = useState("https://i.pravatar.cc/150?img=1");
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
-    name: "Logitech Wireless Mouse",
-    sku: "MOU-001",
-    category: "accessories",
-    purchasePrice: "40.00",
-    sellingPrice: "65.00",
-    stock: "48",
+    name: "",
+    sku: "",
+    category: "",
+    purchasePrice: "",
+    sellingPrice: "",
+    stockQuantity: "",
   });
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        // Find product from list since our backend doesn't have a GET /products/:id yet,
+        // Wait, I can just fetch all and find it, or implement GET /products/:id in backend if missing.
+        // Actually I didn't create a GET /products/:id in backend. Let's just fetch from /products and filter.
+        const response = await api.get('/products');
+        if (response.data.success) {
+          const product = response.data.data.find(p => p._id === productId);
+          if (product) {
+            setFormData({
+              name: product.name,
+              sku: product.sku,
+              category: product.category,
+              purchasePrice: product.purchasePrice,
+              sellingPrice: product.sellingPrice,
+              stockQuantity: product.stockQuantity,
+            });
+            if (product.productImage) {
+              setImagePreview(`http://localhost:5000${product.productImage}`);
+            }
+          } else {
+            setError("Product not found");
+          }
+        }
+      } catch (err) {
+        setError("Failed to fetch product details");
+      } finally {
+        setFetching(false);
+      }
+    };
+    if (productId) fetchProduct();
+  }, [productId]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
   };
@@ -32,7 +73,43 @@ export default function EditProductPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = new FormData();
+      Object.keys(formData).forEach((key) => {
+        data.append(key, formData[key]);
+      });
+      if (imageFile) {
+        data.append("image", imageFile);
+      }
+
+      const response = await api.patch(`/products/${productId}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (response.data.success) {
+        window.location.href = "/dashboard/products";
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update product");
+      setLoading(false);
+    }
+  };
+
+  if (fetching) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   return (
+    <RoleGuard allowedRoles={["Admin", "Manager"]}>
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Page Header */}
       <div className="flex items-center gap-4">
@@ -44,12 +121,18 @@ export default function EditProductPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Edit Product</h1>
-          <p className="text-slate-500 mt-1">Update details for product #{productId}.</p>
+          <p className="text-slate-500 mt-1">Update details for product.</p>
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 rounded-xl bg-red-50 text-red-600 border border-red-100 font-medium text-sm">
+          {error}
+        </div>
+      )}
+
       <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
-        <form className="p-6 sm:p-8 space-y-8">
+        <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-8">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
@@ -87,11 +170,12 @@ export default function EditProductPage() {
                     value={formData.category}
                     onChange={handleChange}
                     className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none"
+                    required
                   >
                     <option value="">Select category</option>
-                    <option value="accessories">Accessories</option>
-                    <option value="storage">Storage</option>
-                    <option value="monitor">Monitor</option>
+                    <option value="Accessories">Accessories</option>
+                    <option value="Storage">Storage</option>
+                    <option value="Monitor">Monitor</option>
                   </select>
                 </div>
               </div>
@@ -101,7 +185,7 @@ export default function EditProductPage() {
                   <label className="text-sm font-semibold text-slate-700 block">Purchase Price <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-slate-500 sm:text-sm">$</span>
+                      <span className="text-slate-500 sm:text-sm">৳</span>
                     </div>
                     <input
                       type="number"
@@ -117,7 +201,7 @@ export default function EditProductPage() {
                   <label className="text-sm font-semibold text-slate-700 block">Selling Price <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-slate-500 sm:text-sm">$</span>
+                      <span className="text-slate-500 sm:text-sm">৳</span>
                     </div>
                     <input
                       type="number"
@@ -135,8 +219,8 @@ export default function EditProductPage() {
                 <label className="text-sm font-semibold text-slate-700 block">Stock Quantity <span className="text-red-500">*</span></label>
                 <input
                   type="number"
-                  name="stock"
-                  value={formData.stock}
+                  name="stockQuantity"
+                  value={formData.stockQuantity}
                   onChange={handleChange}
                   className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200"
                   required
@@ -164,7 +248,7 @@ export default function EditProductPage() {
                       </button>
                       <button 
                         type="button"
-                        onClick={(e) => { e.preventDefault(); setImagePreview(null); }}
+                        onClick={(e) => { e.preventDefault(); setImagePreview(null); setImageFile(null); }}
                         className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-red-600"
                       >
                         Remove
@@ -185,7 +269,7 @@ export default function EditProductPage() {
                         <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleImageChange} accept="image/*" />
                       </label>
                     </div>
-                    <p className="text-xs leading-5 text-slate-500 mt-2">JPG, PNG, GIF up to 2MB</p>
+                    <p className="text-xs leading-5 text-slate-500 mt-2">JPG, PNG, GIF up to 5MB</p>
                   </div>
                 )}
               </div>
@@ -203,15 +287,17 @@ export default function EditProductPage() {
             </Link>
             <button
               type="submit"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              disabled={loading}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-sm disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             >
-              <Save className="w-5 h-5" />
-              Update Product
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+              {loading ? "Updating..." : "Update Product"}
             </button>
           </div>
 
         </form>
       </div>
     </div>
+    </RoleGuard>
   );
 }

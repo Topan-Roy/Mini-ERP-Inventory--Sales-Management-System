@@ -1,16 +1,62 @@
-import Link from "next/link";
-import { Search, Plus, Filter, Edit, Trash2, Eye, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+"use client";
 
-// Mock Data
-const products = [
-  { id: 1, image: "https://i.pravatar.cc/150?img=1", name: "Logitech Wireless Mouse", sku: "MOU-001", category: "Accessories", purchasePrice: "$40.00", sellingPrice: "$65.00", stock: 48, status: "In Stock" },
-  { id: 2, image: "https://i.pravatar.cc/150?img=2", name: "HP Mechanical Keyboard", sku: "KB-001", category: "Accessories", purchasePrice: "$60.00", sellingPrice: "$90.00", stock: 29, status: "In Stock" },
-  { id: 3, image: "https://i.pravatar.cc/150?img=3", name: "Kingston SSD 256GB", sku: "SSD-256", category: "Storage", purchasePrice: "$32.00", sellingPrice: "$42.00", stock: 10, status: "Low Stock" },
-  { id: 4, image: "https://i.pravatar.cc/150?img=4", name: "Dell Monitor 24 inch", sku: "MON-24", category: "Monitor", purchasePrice: "$85.00", sellingPrice: "$110.00", stock: 15, status: "In Stock" },
-  { id: 5, image: "https://i.pravatar.cc/150?img=5", name: "USB-C Fast Charger", sku: "CHG-005", category: "Accessories", purchasePrice: "$15.00", sellingPrice: "$25.00", stock: 2, status: "Low Stock" },
-];
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Search, Plus, Filter, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ProductsPage() {
+  const { user } = useAuth();
+  const isAdminOrManager = user?.role === "Admin" || user?.role === "Manager";
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(`/products?page=${page}&limit=10&search=${search}`);
+      if (response.data.success) {
+        setProducts(response.data.data);
+        setTotalPages(response.data.meta.totalPages);
+        setTotalItems(response.data.meta.total);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch products");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [page]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    fetchProducts();
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      try {
+        const response = await api.delete(`/products/${id}`);
+        if (response.data.success) {
+          fetchProducts();
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to delete product");
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 flex flex-col h-full">
       {/* Page Header */}
@@ -20,13 +66,15 @@ export default function ProductsPage() {
           <p className="text-slate-500 mt-1">Manage your inventory and product catalog.</p>
         </div>
         
-        <Link 
-          href="/dashboard/products/add" 
-          className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add Product
-        </Link>
+        {isAdminOrManager && (
+          <Link 
+            href="/dashboard/products/add" 
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            <Plus className="w-5 h-5" />
+            Add Product
+          </Link>
+        )}
       </div>
 
       {/* Filters & Table Card */}
@@ -34,34 +82,33 @@ export default function ProductsPage() {
         
         {/* Filters Bar */}
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
-          <div className="relative w-full sm:w-96">
+          <form onSubmit={handleSearch} className="relative w-full sm:w-96">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-slate-400" />
             </div>
             <input
               type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 shadow-sm"
               placeholder="Search products by name, SKU..."
             />
-          </div>
+          </form>
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <select className="appearance-none w-full bg-white border border-slate-200 text-slate-700 rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm font-medium">
-                <option value="">All Categories</option>
-                <option value="accessories">Accessories</option>
-                <option value="storage">Storage</option>
-                <option value="monitor">Monitor</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                <Filter className="h-4 w-4" />
-              </div>
-            </div>
+            <button onClick={handleSearch} className="bg-slate-100 px-4 py-2.5 rounded-xl font-medium text-slate-700 hover:bg-slate-200">
+              Search
+            </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-x-auto flex-1 relative min-h-[300px]">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+          ) : null}
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 sticky top-0 z-10">
               <tr>
@@ -76,14 +123,21 @@ export default function ProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {products.length === 0 && !loading && (
+                <tr>
+                  <td colSpan="8" className="px-6 py-8 text-center text-slate-500">
+                    No products found. Add a new product to get started.
+                  </td>
+                </tr>
+              )}
               {products.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={product._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex-shrink-0">
-                        <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+                        <img src={`http://localhost:5000${product.productImage}`} alt={product.name} className="h-full w-full object-cover" />
                       </div>
-                      <div className="font-medium text-slate-900">{product.name}</div>
+                      <div className="font-medium text-slate-900 max-w-[200px] truncate" title={product.name}>{product.name}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-500">{product.sku}</td>
@@ -92,32 +146,31 @@ export default function ProductsPage() {
                       {product.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium text-slate-700">{product.purchasePrice}</td>
-                  <td className="px-6 py-4 font-medium text-slate-900">{product.sellingPrice}</td>
+                  <td className="px-6 py-4 font-medium text-slate-700">৳{product.purchasePrice}</td>
+                  <td className="px-6 py-4 font-medium text-slate-900">৳{product.sellingPrice}</td>
                   <td className="px-6 py-4 text-center">
-                    <span className="font-bold text-slate-700">{product.stock}</span>
+                    <span className="font-bold text-slate-700">{product.stockQuantity}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${
-                      product.status === 'In Stock' 
+                      product.stockQuantity > 5 
                         ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
                         : 'bg-amber-50 text-amber-600 border-amber-100'
                     }`}>
-                      {product.status}
+                      {product.stockQuantity > 5 ? 'In Stock' : 'Low Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="View">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <Link href={`/dashboard/products/edit/${product.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
-                        <Edit className="w-4 h-4" />
-                      </Link>
-                      <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {isAdminOrManager && (
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/dashboard/products/edit/${product._id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                          <Edit className="w-4 h-4" />
+                        </Link>
+                        <button onClick={() => handleDelete(product._id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -128,18 +181,22 @@ export default function ProductsPage() {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            Showing <span className="font-medium text-slate-900">1</span> to <span className="font-medium text-slate-900">5</span> of <span className="font-medium text-slate-900">120</span> products
+            Total <span className="font-medium text-slate-900">{totalItems}</span> products
           </p>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button className="w-8 h-8 rounded-lg bg-indigo-600 text-white text-sm font-medium flex items-center justify-center">1</button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">2</button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">3</button>
-            <span className="text-slate-400 px-1"><MoreHorizontal className="w-4 h-4" /></span>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">12</button>
-            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+            <span className="text-sm font-medium text-slate-700 px-2">Page {page} of {totalPages || 1}</span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || totalPages === 0}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

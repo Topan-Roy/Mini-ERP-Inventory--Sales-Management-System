@@ -3,17 +3,7 @@
 import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: '1 Jul', sales: 4000 },
-  { name: '5 Jul', sales: 3000 },
-  { name: '10 Jul', sales: 5000 },
-  { name: '15 Jul', sales: 2780 },
-  { name: '20 Jul', sales: 6890 },
-  { name: '25 Jul', sales: 4390 },
-  { name: '30 Jul', sales: 7490 },
-];
-
-export default function SalesChart() {
+export default function SalesChart({ data }) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -24,24 +14,28 @@ export default function SalesChart() {
     return <div className="h-[300px] w-full animate-pulse bg-slate-100 rounded-xl"></div>;
   }
 
+  // Format data for Recharts (expected { name: string, sales: number })
+  const chartData = data?.length > 0 
+    ? data.map(d => ({ name: d._id, sales: d.totalSales }))
+    : [
+        { name: '1 Jul', sales: 0 },
+        { name: '5 Jul', sales: 0 },
+        { name: '10 Jul', sales: 0 }
+      ]; // fallback empty state
+
   return (
     <div className="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-slate-900">Sales Overview</h3>
-          <p className="text-sm text-slate-500">Monthly revenue tracking</p>
+          <p className="text-sm text-slate-500">Last 7 days revenue tracking</p>
         </div>
-        <select className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block px-3 py-2 outline-none">
-          <option>This Month</option>
-          <option>Last Month</option>
-          <option>This Year</option>
-        </select>
       </div>
       
       <div className="h-[300px] w-full mt-4">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
-            data={data}
+            data={chartData}
             margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           >
             <defs>
@@ -62,11 +56,12 @@ export default function SalesChart() {
               axisLine={false} 
               tickLine={false} 
               tick={{ fill: '#64748b', fontSize: 12 }}
-              tickFormatter={(value) => `$${value/1000}k`}
+              tickFormatter={(value) => `৳${value}`}
             />
             <Tooltip 
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
               itemStyle={{ color: '#4f46e5', fontWeight: 'bold' }}
+              formatter={(value) => [`৳${value}`, 'Sales']}
             />
             <Area 
               type="monotone" 

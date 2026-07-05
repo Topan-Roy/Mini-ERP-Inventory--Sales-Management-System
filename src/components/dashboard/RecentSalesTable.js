@@ -1,9 +1,5 @@
-export default function RecentSalesTable() {
-  const salesData = [
-    { invoice: "INV-001", customer: "Rahim Uddin", date: "01 Jul 2025", total: "৳1,950", status: "Completed" },
-    { invoice: "INV-002", customer: "Karim Hossain", date: "01 Jul 2025", total: "৳2,450", status: "Completed" },
-    { invoice: "INV-003", customer: "Jamal Hossain", date: "30 Jun 2025", total: "৳3,750", status: "Completed" },
-  ];
+export default function RecentSalesTable({ sales }) {
+  const salesData = sales || [];
 
   return (
     <div className="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
@@ -23,15 +19,19 @@ export default function RecentSalesTable() {
             </tr>
           </thead>
           <tbody>
-            {salesData.map((sale, i) => (
-              <tr key={i} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-4 font-medium text-slate-900">{sale.invoice}</td>
-                <td className="px-4 py-4 text-slate-600">{sale.customer}</td>
-                <td className="px-4 py-4 text-slate-500">{sale.date}</td>
-                <td className="px-4 py-4 text-right font-medium text-slate-900">{sale.total}</td>
+            {salesData.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center py-6 text-slate-500">No recent sales found.</td>
+              </tr>
+            ) : salesData.map((sale) => (
+              <tr key={sale._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                <td className="px-4 py-4 font-medium text-slate-900">{sale.invoiceNo}</td>
+                <td className="px-4 py-4 text-slate-600">{sale.customer ? sale.customer.name : 'Walk-in'}</td>
+                <td className="px-4 py-4 text-slate-500">{new Date(sale.createdAt).toLocaleDateString()}</td>
+                <td className="px-4 py-4 text-right font-medium text-slate-900">৳{sale.totalAmount.toLocaleString()}</td>
                 <td className="px-4 py-4 text-center">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-100">
-                    {sale.status}
+                    Completed
                   </span>
                 </td>
               </tr>

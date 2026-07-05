@@ -3,17 +3,33 @@
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import api from "../lib/api";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e) => {
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // For now, we will just simulate a login and redirect to the dashboard
-    // In a real app, this would call an API
-    window.location.href = "/dashboard";
+    setError("");
+    setLoading(true);
+    
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      if (response.data.success) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        window.location.href = "/dashboard";
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -85,6 +101,12 @@ export default function LoginPage() {
             <p className="mt-2 text-slate-500">Please enter your details to access your account.</p>
           </div>
 
+          {error && (
+            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium border border-red-100">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-6 mt-8">
             {/* Email Field */}
             <div className="space-y-2">
@@ -154,22 +176,15 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="group w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+              disabled={loading}
+              className="group w-full flex justify-center items-center gap-2 py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
             >
-              Sign In
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {loading ? "Signing In..." : "Sign In"}
+              {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
             </button>
           </form>
 
-          {/* Demo Credentials Hint */}
-          <div className="mt-8 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-            <p className="text-sm text-indigo-800 text-center font-medium">
-              Demo Access
-            </p>
-            <p className="text-xs text-indigo-600/80 text-center mt-1">
-              Any email and password will work for this demo.
-            </p>
-          </div>
+
 
         </div>
       </div>

@@ -1,23 +1,68 @@
-import Link from "next/link";
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+"use client";
 
-// Mock Data
-const customers = [
-  { id: 1, name: "Rahim Uddin", phone: "01711-111111", email: "rahim@gmail.com", address: "Dhaka", totalPurchase: "৳15,450" },
-  { id: 2, name: "Karim Hossain", phone: "01822-222222", email: "karim@gmail.com", address: "Chittagong", totalPurchase: "৳8,200" },
-  { id: 3, name: "Jamal Khan", phone: "01733-333333", email: "jamal@gmail.com", address: "Sylhet", totalPurchase: "৳12,050" },
-  { id: 4, name: "Rifat Ahmed", phone: "01644-444444", email: "rifat@gmail.com", address: "Khulna", totalPurchase: "৳3,600" },
-  { id: 5, name: "Imran Hossain", phone: "01955-555555", email: "imran@gmail.com", address: "Rajshahi", totalPurchase: "৳21,900" },
-];
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import api from "@/lib/api";
+import RoleGuard from "@/components/RoleGuard";
 
 export default function CustomersPage() {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(`/customers?page=${page}&limit=10&search=${search}`);
+      if (response.data.success) {
+        setCustomers(response.data.data);
+        setTotalPages(response.data.meta.totalPages);
+        setTotalItems(response.data.meta.total);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [page]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    fetchCustomers();
+  };
+
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this customer?")) {
+      try {
+        const response = await api.delete(`/customers/${id}`);
+        if (response.data.success) {
+          fetchCustomers();
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || "Failed to delete customer");
+      }
+    }
+  };
+
   return (
+    <RoleGuard allowedRoles={["Admin", "Manager"]}>
     <div className="space-y-6 flex flex-col h-full">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Customers</h1>
-          <p className="text-slate-500 mt-1">Manage your customer relationships and history.</p>
+          <p className="text-slate-500 mt-1">Manage your customer database and purchase history.</p>
         </div>
         
         <Link 
@@ -34,20 +79,32 @@ export default function CustomersPage() {
         
         {/* Filters Bar */}
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
-          <div className="relative w-full sm:w-96">
+          <form onSubmit={handleSearch} className="relative w-full sm:w-96">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-slate-400" />
             </div>
             <input
               type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 shadow-sm"
-              placeholder="Search customers by name, phone or email..."
+              placeholder="Search by name, phone or email..."
             />
+          </form>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button onClick={handleSearch} className="bg-slate-100 px-4 py-2.5 rounded-xl font-medium text-slate-700 hover:bg-slate-200">
+              Search
+            </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto flex-1">
+        <div className="overflow-x-auto flex-1 relative min-h-[300px]">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+          ) : null}
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50/80 sticky top-0 z-10">
               <tr>
@@ -55,31 +112,38 @@ export default function CustomersPage() {
                 <th className="px-6 py-4 font-semibold">Phone Number</th>
                 <th className="px-6 py-4 font-semibold">Email</th>
                 <th className="px-6 py-4 font-semibold">Address</th>
-                <th className="px-6 py-4 font-semibold">Total Purchase</th>
                 <th className="px-6 py-4 font-semibold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {customers.length === 0 && !loading && (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-slate-500">
+                    No customers found. Add a new customer to get started.
+                  </td>
+                </tr>
+              )}
               {customers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={customer._id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600 font-bold border border-indigo-100">
-                        {customer.name.charAt(0)}
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-indigo-100 flex-shrink-0 flex items-center justify-center border border-indigo-200">
+                        <span className="text-indigo-700 font-bold text-sm">
+                          {customer.name.substring(0, 2).toUpperCase()}
+                        </span>
                       </div>
                       <div className="font-medium text-slate-900">{customer.name}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-slate-600 font-medium">{customer.phone}</td>
-                  <td className="px-6 py-4 text-slate-500">{customer.email}</td>
-                  <td className="px-6 py-4 text-slate-500">{customer.address}</td>
-                  <td className="px-6 py-4 font-semibold text-slate-900">{customer.totalPurchase}</td>
+                  <td className="px-6 py-4 text-slate-600">{customer.phone}</td>
+                  <td className="px-6 py-4 text-slate-500">{customer.email || 'N/A'}</td>
+                  <td className="px-6 py-4 text-slate-500 max-w-[200px] truncate" title={customer.address}>{customer.address || 'N/A'}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link href={`/dashboard/customers/edit/${customer.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
+                      <Link href={`/dashboard/customers/edit/${customer._id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
                         <Edit className="w-4 h-4" />
                       </Link>
-                      <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                      <button onClick={() => handleDelete(customer._id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -93,18 +157,22 @@ export default function CustomersPage() {
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-between">
           <p className="text-sm text-slate-500">
-            Showing <span className="font-medium text-slate-900">1</span> to <span className="font-medium text-slate-900">5</span> of <span className="font-medium text-slate-900">85</span> customers
+            Total <span className="font-medium text-slate-900">{totalItems}</span> customers
           </p>
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50">
+            <button 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button className="w-8 h-8 rounded-lg bg-indigo-600 text-white text-sm font-medium flex items-center justify-center">1</button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">2</button>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">3</button>
-            <span className="text-slate-400 px-1"><MoreHorizontal className="w-4 h-4" /></span>
-            <button className="w-8 h-8 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm font-medium flex items-center justify-center">17</button>
-            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors">
+            <span className="text-sm font-medium text-slate-700 px-2">Page {page} of {totalPages || 1}</span>
+            <button 
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages || totalPages === 0}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -112,5 +180,6 @@ export default function CustomersPage() {
 
       </div>
     </div>
+    </RoleGuard>
   );
 }

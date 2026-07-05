@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-const lowStockData = [
-  { id: 1, product: "Wireless Mouse", sku: "MS-001", stock: 2, status: "Low Stock" },
-  { id: 2, product: "Keyboard", sku: "KB-002", stock: 1, status: "Low Stock" },
-  { id: 3, product: "SSD 256GB", sku: "SSD-256", stock: 4, status: "Low Stock" },
-  { id: 4, product: "USB Cable", sku: "USB-017", stock: 3, status: "Low Stock" },
-];
+export default function LowStockTable({ products }) {
+  const lowStockData = products || [];
 
-export default function LowStockTable() {
   return (
     <div className="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
@@ -26,14 +21,18 @@ export default function LowStockTable() {
             </tr>
           </thead>
           <tbody>
-            {lowStockData.map((item) => (
-              <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-4 font-medium text-slate-900">{item.product}</td>
+            {lowStockData.length === 0 ? (
+              <tr>
+                <td colSpan="4" className="text-center py-6 text-slate-500">All products are well stocked!</td>
+              </tr>
+            ) : lowStockData.map((item) => (
+              <tr key={item._id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+                <td className="px-4 py-4 font-medium text-slate-900">{item.name}</td>
                 <td className="px-4 py-4 text-slate-500">{item.sku}</td>
-                <td className="px-4 py-4 text-center font-bold text-slate-900">{item.stock}</td>
+                <td className="px-4 py-4 text-center font-bold text-slate-900">{item.stockQuantity}</td>
                 <td className="px-4 py-4 text-right">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-600 border border-red-100">
-                    {item.status}
+                    Low Stock
                   </span>
                 </td>
               </tr>
