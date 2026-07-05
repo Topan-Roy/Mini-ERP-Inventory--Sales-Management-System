@@ -174,8 +174,18 @@ export default function EditProductPage() {
                   >
                     <option value="">Select category</option>
                     <option value="Accessories">Accessories</option>
-                    <option value="Storage">Storage</option>
+                    <option value="Keyboard">Keyboard</option>
+                    <option value="Mouse">Mouse</option>
                     <option value="Monitor">Monitor</option>
+                    <option value="Storage">Storage</option>
+                    <option value="RAM">RAM</option>
+                    <option value="Processor">Processor</option>
+                    <option value="Motherboard">Motherboard</option>
+                    <option value="Graphics Card">Graphics Card</option>
+                    <option value="Networking">Networking</option>
+                    <option value="Printer">Printer</option>
+                    <option value="Laptop">Laptop</option>
+                    <option value="Desktop">Desktop</option>
                   </select>
                 </div>
               </div>
