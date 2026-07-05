@@ -22,3 +22,11 @@ body {
   color: var(--foreground);
   font-family: "Segoe UI", Arial, Helvetica, sans-serif;
 }
+
+button, 
+[role="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="button"] {
+  cursor: pointer;
+}

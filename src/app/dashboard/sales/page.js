@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2, ShoppingCart, RefreshCw, Save, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function CreateSalePage() {
   const router = useRouter();
@@ -51,7 +52,12 @@ export default function CreateSalePage() {
 
     // Check if enough stock
     if (quantity > product.stockQuantity) {
-      alert(`Only ${product.stockQuantity} items left in stock for ${product.name}`);
+      Swal.fire({
+        icon: 'warning',
+        title: 'Low Stock',
+        text: `Only ${product.stockQuantity} items left in stock for ${product.name}`,
+        confirmButtonColor: '#4f46e5'
+      });
       return;
     }
 
@@ -61,7 +67,12 @@ export default function CreateSalePage() {
       const newItems = [...saleItems];
       const newQuantity = newItems[existingItemIndex].quantity + parseInt(quantity);
       if (newQuantity > product.stockQuantity) {
-        alert(`Cannot add more. Only ${product.stockQuantity} items in stock.`);
+        Swal.fire({
+          icon: 'warning',
+          title: 'Stock Limit Exceeded',
+          text: `Cannot add more. Only ${product.stockQuantity} items in stock.`,
+          confirmButtonColor: '#4f46e5'
+        });
         return;
       }
       newItems[existingItemIndex].quantity = newQuantity;
@@ -91,7 +102,16 @@ export default function CreateSalePage() {
         const newQuantity = item.quantity + delta;
         if (newQuantity < 1) return item;
         if (newQuantity > item.product.stockQuantity) {
-          alert(`Maximum stock reached`);
+          Swal.fire({
+            icon: 'warning',
+            title: 'Maximum Stock',
+            text: `You have reached the maximum available stock for this item.`,
+            confirmButtonColor: '#4f46e5',
+            toast: true,
+            position: 'top-end',
+            timer: 3000,
+            showConfirmButton: false
+          });
           return item;
         }
         return {
@@ -121,9 +141,9 @@ export default function CreateSalePage() {
 
     try {
       const payload = {
-        customer: selectedCustomerId || null, // null for walk-in
+        customerId: selectedCustomerId || null, // null for walk-in
         items: saleItems.map(item => ({
-          product: item.product._id,
+          productId: item.product._id,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           subTotal: item.subTotal

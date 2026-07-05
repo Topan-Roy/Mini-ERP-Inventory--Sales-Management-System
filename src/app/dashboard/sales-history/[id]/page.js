@@ -150,9 +150,9 @@ export default function SaleDetailsPage() {
                   <tr key={index}>
                     <td className="px-4 py-5 text-slate-500">{index + 1}</td>
                     <td className="px-4 py-5 font-bold text-slate-900">{item.product ? item.product.name : 'Unknown Product'}</td>
-                    <td className="px-4 py-5 text-right text-slate-600">৳{item.unitPrice.toLocaleString()}</td>
+                    <td className="px-4 py-5 text-right text-slate-600">৳{(item.price || 0).toLocaleString()}</td>
                     <td className="px-4 py-5 text-center font-medium text-slate-700">{item.quantity}</td>
-                    <td className="px-4 py-5 text-right font-bold text-slate-900">৳{item.subTotal.toLocaleString()}</td>
+                    <td className="px-4 py-5 text-right font-bold text-slate-900">৳{((item.price || 0) * item.quantity).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>

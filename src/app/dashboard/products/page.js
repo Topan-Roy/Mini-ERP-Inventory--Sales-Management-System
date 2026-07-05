@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Plus, Filter, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import Swal from "sweetalert2";
 
 export default function ProductsPage() {
   const { user } = useAuth();
@@ -45,14 +46,35 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this product?")) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this product deletion!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await api.delete(`/products/${id}`);
         if (response.data.success) {
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'Product has been deleted.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
           fetchProducts();
         }
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to delete product");
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: err.response?.data?.message || "Failed to delete product",
+        });
       }
     }
   };

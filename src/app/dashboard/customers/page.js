@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import RoleGuard from "@/components/RoleGuard";
+import Swal from "sweetalert2";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState([]);
@@ -43,14 +44,35 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this customer?")) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this customer deletion!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
       try {
         const response = await api.delete(`/customers/${id}`);
         if (response.data.success) {
+          Swal.fire({
+            title: 'Deleted!',
+            text: 'Customer has been deleted.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
           fetchCustomers();
         }
       } catch (err) {
-        alert(err.response?.data?.message || "Failed to delete customer");
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: err.response?.data?.message || "Failed to delete customer",
+        });
       }
     }
   };
