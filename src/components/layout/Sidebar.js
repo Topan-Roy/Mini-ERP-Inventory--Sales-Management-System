@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  ShoppingCart, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Package,
+  Users,
+  ShoppingCart,
+  LogOut,
   ShieldCheck,
   History,
   FileText,
@@ -20,9 +20,7 @@ const navItems = [
   { name: "Customers", href: "/dashboard/customers", icon: Users },
   { name: "Sales", href: "/dashboard/sales", icon: ShoppingCart },
   { name: "Sales History", href: "/dashboard/sales-history", icon: History },
-  { name: "Reports", href: "/dashboard/reports", icon: FileText },
-  { name: "Users", href: "/dashboard/users", icon: Users },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+
 ];
 
 export default function Sidebar() {
@@ -51,11 +49,10 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                isActive 
-                  ? "bg-indigo-600/10 text-indigo-400 font-medium" 
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+                  ? "bg-indigo-600/10 text-indigo-400 font-medium"
                   : "hover:bg-slate-800 hover:text-white"
-              }`}
+                }`}
             >
               <item.icon className={`w-5 h-5 ${isActive ? "text-indigo-400" : "text-slate-400"}`} />
               {item.name}
@@ -66,7 +63,7 @@ export default function Sidebar() {
 
       {/* Logout */}
       <div className="p-4 border-t border-slate-800/60">
-        <Link 
+        <Link
           href="/"
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all duration-200"
         >
