@@ -8,7 +8,6 @@ import {
   Users,
   ShoppingCart,
   LogOut,
-  ShieldCheck,
   History,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -42,9 +41,7 @@ export default function Sidebar() {
       {/* Brand */}
       <div className="h-20 flex items-center px-6 border-b border-slate-800/60">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="bg-indigo-600 p-2 rounded-lg">
-            <ShieldCheck className="w-6 h-6 text-white" />
-          </div>
+          <img src="/logo.png" alt="Mini ERP Logo" className="w-10 h-10 object-contain rounded-lg" />
           <div>
             <span className="text-xl font-bold text-white tracking-tight block">Mini ERP</span>
             <span className={`text-[10px] font-medium tracking-widest uppercase ${roleColors[role] || "text-slate-400"}`}>
