@@ -231,21 +231,18 @@ export default function AddProductPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center flex flex-col items-center justify-center h-full">
+                  <label htmlFor="file-upload" className="text-center flex flex-col items-center justify-center h-full w-full cursor-pointer">
                     <div className="p-4 bg-white rounded-full shadow-sm border border-slate-100 mb-4 text-indigo-500 group-hover:scale-110 transition-transform duration-300">
                       <Upload className="mx-auto h-8 w-8" aria-hidden="true" />
                     </div>
                     <div className="mt-4 flex text-sm leading-6 text-slate-600 justify-center">
-                      <label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md bg-transparent font-semibold text-indigo-600 focus-within:outline-none hover:text-indigo-500"
-                      >
-                        <span>Click to upload image</span>
-                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleImageChange} accept="image/*" />
-                      </label>
+                      <span className="relative font-semibold text-indigo-600 focus-within:outline-none hover:text-indigo-500">
+                        Click to upload image
+                      </span>
+                      <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleImageChange} accept="image/*" />
                     </div>
                     <p className="text-xs leading-5 text-slate-500 mt-2">JPG, PNG, GIF up to 5MB</p>
-                  </div>
+                  </label>
                 )}
               </div>
             </div>
