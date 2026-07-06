@@ -1,23 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, ShoppingCart, RefreshCw, Save, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2, ShoppingCart, RefreshCw, Save, Loader2, Search, ChevronDown, X } from "lucide-react";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
 export default function CreateSalePage() {
   const router = useRouter();
-  
+
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [loadingInitial, setLoadingInitial] = useState(true);
-  
+
   const [saleItems, setSaleItems] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
-  
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
+        setCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,7 +42,7 @@ export default function CreateSalePage() {
           api.get('/products?limit=100'),
           api.get('/customers?limit=100')
         ]);
-        
+
         if (prodRes.data.success) {
           setProducts(prodRes.data.data.filter(p => p.stockQuantity > 0)); // Only show products in stock
         }
@@ -187,18 +201,18 @@ export default function CreateSalePage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Left Column: Form & Table (Takes up 2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Add Item Card */}
           <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-6">Select Products</h2>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
               <div className="sm:col-span-6 space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">Product <span className="text-red-500">*</span></label>
-                <select 
+                <select
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
                   className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none"
@@ -242,7 +256,7 @@ export default function CreateSalePage() {
                 Sale Items
               </h2>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-slate-500 uppercase bg-slate-50/80">
@@ -290,24 +304,93 @@ export default function CreateSalePage() {
 
         {/* Right Column: Customer & Summary (Takes up 1/3) */}
         <div className="space-y-6">
-          
+
           {/* Customer Selection Card */}
           <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-6">Customer Details</h2>
-            
+
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-slate-700 block">Select Customer <span className="text-red-500">*</span></label>
-                <select 
-                  value={selectedCustomerId}
-                  onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 appearance-none"
-                >
-                  <option value="">Walk-in Customer</option>
-                  {customers.map(c => (
-                    <option key={c._id} value={c._id}>{c.name} ({c.phone})</option>
-                  ))}
-                </select>
+              <div className="space-y-2" ref={customerDropdownRef}>
+                <label className="text-sm font-semibold text-slate-700 block">Select Customer</label>
+                {/* Searchable Customer Combobox */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerDropdownOpen(o => !o)}
+                    className="block w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-200 flex items-center justify-between gap-2"
+                  >
+                    <span className={selectedCustomerId ? 'text-slate-900' : 'text-slate-400'}>
+                      {selectedCustomerId
+                        ? (() => { const c = customers.find(c => c._id === selectedCustomerId); return c ? `${c.name} (${c.phone})` : 'Walk-in Customer'; })()
+                        : 'Walk-in Customer'}
+                    </span>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {selectedCustomerId && (
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(''); setCustomerSearch(''); }}
+                          className="text-slate-400 hover:text-slate-600 p-0.5 rounded"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${customerDropdownOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </button>
+
+                  {customerDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                      {/* Search input */}
+                      <div className="p-2 border-b border-slate-100">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                          <input
+                            autoFocus
+                            type="text"
+                            value={customerSearch}
+                            onChange={(e) => setCustomerSearch(e.target.value)}
+                            placeholder="Search by name or phone..."
+                            className="w-full pl-8 pr-3 py-2 text-sm bg-slate-50 text-[#000000] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      {/* Options list */}
+                      <div className="max-h-52 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedCustomerId(''); setCustomerSearch(''); setCustomerDropdownOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${!selectedCustomerId ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-500'
+                            }`}
+                        >
+                          Walk-in Customer
+                        </button>
+                        {customers
+                          .filter(c =>
+                            c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                            c.phone.includes(customerSearch)
+                          )
+                          .map(c => (
+                            <button
+                              key={c._id}
+                              type="button"
+                              onClick={() => { setSelectedCustomerId(c._id); setCustomerSearch(''); setCustomerDropdownOpen(false); }}
+                              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 transition-colors ${selectedCustomerId === c._id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-700'
+                                }`}
+                            >
+                              <span className="font-medium">{c.name}</span>
+                              <span className="text-slate-400 text-xs ml-2">{c.phone}</span>
+                            </button>
+                          ))}
+                        {customers.filter(c =>
+                          c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                          c.phone.includes(customerSearch)
+                        ).length === 0 && (
+                            <p className="px-4 py-3 text-sm text-slate-400 text-center">No customers found</p>
+                          )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 block">Date</label>
@@ -324,7 +407,7 @@ export default function CreateSalePage() {
           {/* Order Summary Card */}
           <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-6">Order Summary</h2>
-            
+
             <div className="space-y-4 text-sm mb-6">
               <div className="flex justify-between items-center text-slate-600">
                 <span>Subtotal ({saleItems.length} items)</span>
