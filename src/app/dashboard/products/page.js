@@ -18,10 +18,16 @@ export default function ProductsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (currentPage = page, currentSearch = search) => {
     setLoading(true);
     try {
-      const response = await api.get(`/products?page=${page}&limit=10&search=${search}`);
+      const response = await api.get('/products', {
+        params: {
+          page: currentPage,
+          limit: 10,
+          search: currentSearch
+        }
+      });
       if (response.data.success) {
         setProducts(response.data.data);
         setTotalPages(response.data.meta.totalPages);
@@ -36,13 +42,27 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    const timer = setTimeout(() => {
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        fetchProducts(1, search);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchProducts(page, search);
   }, [page]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    fetchProducts();
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      fetchProducts(1, search);
+    }
   };
 
   const handleDelete = async (id) => {

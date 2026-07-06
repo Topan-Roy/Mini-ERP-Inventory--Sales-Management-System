@@ -14,10 +14,16 @@ export default function SalesHistoryPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const fetchSales = async () => {
+  const fetchSales = async (currentPage = page, currentSearch = search) => {
     setLoading(true);
     try {
-      const response = await api.get(`/sales?page=${page}&limit=10&search=${search}`);
+      const response = await api.get('/sales', {
+        params: {
+          page: currentPage,
+          limit: 10,
+          search: currentSearch
+        }
+      });
       if (response.data.success) {
         setSales(response.data.data);
         setTotalPages(response.data.meta.totalPages);
@@ -32,7 +38,18 @@ export default function SalesHistoryPage() {
   };
 
   useEffect(() => {
-    fetchSales();
+    const timer = setTimeout(() => {
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        fetchSales(1, search);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchSales(page, search);
   }, [page]);
 
   const handleSearch = (e) => {
@@ -53,7 +70,7 @@ export default function SalesHistoryPage() {
 
       {/* Filters & Table Card */}
       <div className="bg-white rounded-[1.5rem] border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col flex-1 overflow-hidden">
-        
+
         {/* Filters Bar */}
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row gap-4 justify-between items-center bg-slate-50/50">
           <form onSubmit={handleSearch} className="relative w-full sm:w-96">
@@ -68,7 +85,7 @@ export default function SalesHistoryPage() {
               placeholder="Search by Invoice No..."
             />
           </form>
-          
+
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button onClick={handleSearch} className="bg-slate-100 px-4 py-2.5 rounded-xl font-medium text-slate-700 hover:bg-slate-200">
               Search
@@ -80,7 +97,7 @@ export default function SalesHistoryPage() {
         <div className="overflow-x-auto flex-1 relative min-h-[300px]">
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
-               <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
             </div>
           ) : null}
           <table className="w-full text-sm text-left whitespace-nowrap">
@@ -137,7 +154,7 @@ export default function SalesHistoryPage() {
             Total <span className="font-medium text-slate-900">{totalItems}</span> sales
           </p>
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
               className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"
@@ -145,7 +162,7 @@ export default function SalesHistoryPage() {
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-sm font-medium text-slate-700 px-2">Page {page} of {totalPages || 1}</span>
-            <button 
+            <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || totalPages === 0}
               className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50"

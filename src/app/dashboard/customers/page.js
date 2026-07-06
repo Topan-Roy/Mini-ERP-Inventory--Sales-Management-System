@@ -16,10 +16,16 @@ export default function CustomersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = async (currentPage = page, currentSearch = search) => {
     setLoading(true);
     try {
-      const response = await api.get(`/customers?page=${page}&limit=10&search=${search}`);
+      const response = await api.get('/customers', {
+        params: {
+          page: currentPage,
+          limit: 10,
+          search: currentSearch
+        }
+      });
       if (response.data.success) {
         setCustomers(response.data.data);
         setTotalPages(response.data.meta.totalPages);
@@ -34,13 +40,27 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
-    fetchCustomers();
+    const timer = setTimeout(() => {
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        fetchCustomers(1, search);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchCustomers(page, search);
   }, [page]);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    setPage(1);
-    fetchCustomers();
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      fetchCustomers(1, search);
+    }
   };
 
   const handleDelete = async (id) => {
